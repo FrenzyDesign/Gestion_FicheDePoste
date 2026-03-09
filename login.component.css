@@ -1,0 +1,666 @@
+/* ---------- IMPORT POLICES (woff) -------------------------- */
+@font-face {
+  font-family: 'Montserrat Alternates';
+  src: url('/assets/fonts/MontserratAlternates-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/assets/fonts/OpenSans-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/assets/fonts/OpenSans-SemiBold.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/assets/fonts/OpenSans-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- RESET DE BASE -------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- ANIMATIONS ----------------------------------- */
+@keyframes fadeInWrapper {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0);     }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes alertSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.88) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0);       }
+}
+
+/* ============================================================
+   WRAPPER PRINCIPAL
+   ============================================================ */
+.login-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'Open Sans', sans-serif;
+  animation: fadeInWrapper 0.5s ease both;
+}
+
+/* ============================================================
+   PANNEAU GAUCHE
+   ============================================================ */
+.login-left {
+  width: var(--left-width);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 60px 40px 60px;
+  position: relative;
+  animation: slideInLeft 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ---------- LOGO ----------------------------------------- */
+.logo-container {
+  margin-bottom: 30px;
+}
+
+.bhs-logo {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* ---------- CONTENEUR DU FORMULAIRE ---------------------- */
+.form-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 480px;
+}
+
+/* ---------- TITRE DE BIENVENUE --------------------------- */
+.welcome-title {
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-weight: 600;
+  font-size: 2.6rem;
+  color: var(--bhs-green);
+  line-height: 1.1;
+  margin-bottom: 14px;
+  animation: slideUp 0.5s 0.1s ease both;
+}
+
+/* ---------- SOUS-TITRE ----------------------------------- */
+.welcome-subtitle {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  animation: slideUp 0.5s 0.18s ease both;
+}
+
+/* ============================================================
+   MESSAGES ALERTE (succès / erreur)
+   ============================================================ */
+.alert-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  animation: alertSlideDown 0.3s ease both;
+}
+
+.alert-error {
+  background: #fff0f0;
+  border: 1.5px solid #ffbdbd;
+  color: #c0392b;
+}
+
+.alert-success {
+  background: #f0fff4;
+  border: 1.5px solid #b2f5c8;
+  color: #1a7a3a;
+}
+
+.alert-icon svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   CHAMPS DE FORMULAIRE
+   ============================================================ */
+.field-group {
+  margin-bottom: 20px;
+  animation: slideUp 0.5s 0.25s ease both;
+}
+
+/* Conteneur input avec barre dégradée à gauche */
+.input-wrapper {
+  display: flex;
+  align-items: stretch;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.input-wrapper.focused {
+  border-color: var(--bhs-green);
+  box-shadow: 0 0 0 3px rgba(0, 130, 65, 0.12);
+}
+
+.input-wrapper.has-error {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+/* Barre dégradée verticale à gauche */
+.gradient-bar {
+  display: block;
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--gradient-bar);
+}
+
+/* Zone intérieure texte */
+.input-inner {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Label */
+.field-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  pointer-events: none;
+}
+
+/* Input text/email */
+.field-input {
+  border: none;
+  outline: none;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.95rem;
+  color: #333;
+  background: transparent;
+  width: 100%;
+}
+
+.field-input::placeholder {
+  color: #bbb;
+  font-style: italic;
+}
+
+/* ============================================================
+   MOT DE PASSE — ligne avec bouton œil
+   ============================================================ */
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-input {
+  flex: 1;
+}
+
+/* Bouton œil */
+.eye-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: #aaa;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.eye-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.eye-btn:hover {
+  color: var(--bhs-green);
+}
+
+/* ---------- MESSAGE D'ERREUR CHAMP ----------------------- */
+.field-error {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.78rem;
+  color: #e74c3c;
+  padding-left: 6px;
+}
+
+/* ============================================================
+   LIGNE SE SOUVENIR + MOT DE PASSE OUBLIÉ
+   ============================================================ */
+.remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  animation: slideUp 0.5s 0.32s ease both;
+}
+
+/* Checkbox personnalisée */
+.remember-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+/* Cacher le checkbox natif */
+.remember-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkmark {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+/* Coche quand coché */
+.checkmark::after {
+  content: '';
+  display: none;
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 6px;
+  height: 10px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.remember-checkbox:checked + .checkmark {
+  background: var(--bhs-green);
+  border-color: var(--bhs-green);
+}
+
+.remember-checkbox:checked + .checkmark::after {
+  display: block;
+}
+
+.remember-checkbox:focus + .checkmark {
+  box-shadow: 0 0 0 3px rgba(0, 130, 65, 0.2);
+}
+
+/* Lien mot de passe oublié */
+.forgot-link {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #333;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-link:hover {
+  color: var(--bhs-green);
+  text-decoration: underline;
+}
+
+/* ============================================================
+   BOUTONS
+   ============================================================ */
+.buttons-row {
+  display: flex;
+  gap: 14px;
+  animation: slideUp 0.5s 0.38s ease both;
+}
+
+/* Base commune */
+.btn {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 14px 28px;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Bouton Se connecter — dégradé vert */
+.btn-connect {
+  background: var(--gradient-btn);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 130, 65, 0.35);
+}
+
+.btn-connect:hover:not(:disabled) {
+  opacity: 0.92;
+  box-shadow: 0 6px 18px rgba(0, 130, 65, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Bouton Besoin d'aide — contour */
+.btn-help {
+  background: transparent;
+  color: #444;
+  border: 1.5px solid #d0d0d0;
+}
+
+.btn-help:hover {
+  border-color: var(--bhs-green);
+  color: var(--bhs-green);
+  background: rgba(0, 130, 65, 0.04);
+}
+
+/* ---------- SPINNER DE CHARGEMENT ------------------------ */
+.loading-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ============================================================
+   PANNEAU DROIT — Image
+   ============================================================ */
+.login-right {
+  width: var(--right-width);
+  position: relative;
+  overflow: hidden;
+  animation: slideInRight 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  background: #e8f0eb;
+}
+
+/* Image positionnée pour cadrer le visage et le buste — sujet légèrement
+   à gauche dans l'image, donc on décale vers la droite du cadre */
+.login-right-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% top;
+}
+
+.right-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 130, 65, 0.08) 0%,
+    rgba(0, 0, 0, 0.0)     40%,
+    rgba(0, 0, 0, 0.12)    100%
+  );
+  pointer-events: none;
+}
+
+/* ============================================================
+   MODALE AIDE
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeInWrapper 0.25s ease both;
+  padding: 20px;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 520px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.modal-close svg {
+  width: 16px;
+  height: 16px;
+  stroke: #666;
+}
+
+.modal-close:hover {
+  background: #ebebeb;
+}
+
+.modal-icon {
+  width: 52px;
+  height: 52px;
+  background: rgba(0, 130, 65, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.modal-icon svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--bhs-green);
+}
+
+.modal-title {
+  font-family: 'Montserrat Alternates', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--bhs-green);
+  margin-bottom: 24px;
+}
+
+/* Étapes */
+.modal-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.step p {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.6;
+}
+
+.step p strong {
+  color: #222;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: var(--gradient-btn);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.modal-divider {
+  height: 1px;
+  background: #ebebeb;
+  margin-bottom: 20px;
+}
+
+.modal-about {
+  margin-bottom: 28px;
+}
+
+.modal-about h3 {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.modal-about p {
+  font-size: 0.88rem;
+  color: #666;
+  line-height: 1.7;
+}
+
+.modal-about p strong {
+  color: #222;
+}
+
+.modal-btn-close {
+  width: 100%;
+}
+.modal-help-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: invert(32%) sepia(98%) saturate(400%) hue-rotate(100deg) brightness(85%);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .login-right {
+    display: none;
+  }
+
+  .login-left {
+    width: 100%;
+    padding: 40px 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-left {
+    padding: 30px 20px;
+  }
+
+  .welcome-title {
+    font-size: 2rem;
+  }
+
+  .buttons-row {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

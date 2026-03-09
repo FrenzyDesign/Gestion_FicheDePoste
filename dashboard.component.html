@@ -1,0 +1,973 @@
+<!-- ============================================================
+DASHBOARD — BHS · Fidèle à la maquette
+============================================================ -->
+<!-- ===== ALERTE GLOBALE ===== -->
+@if (alertMsg) {
+  <div class="global-alert"
+       [class.alert-success]="alertType==='success'"
+       [class.alert-error]="alertType==='error'">
+    <img [src]="alertType==='success' ? 'assets/icons/check_1_.png' : 'assets/icons/cross.png'"
+         class="alert-icon-img" alt="">
+    <span>{{ alertMsg }}</span>
+  </div>
+}
+<div class="dashboard-wrapper" [class.dark]="isDark" (click)="onDocClick($event)">
+   <!-- ===== SIDEBAR ===== -->
+    <nav class="sidebar" [class.collapsed]="sidebarCollapsed">
+      <!-- Hamburger ≡ -->
+      <button class="sidebar-hamburger" (click)="toggleSidebar(); $event.stopPropagation()" title="Réduire/Agrandir le menu">
+        <img src="assets/icons/menu.png" class="sidebar-hamburger-icon" alt="Menu">
+      </button>
+      <div class="sidebar-items-top">
+        @for (item of menuItemsTop; track item.id) {
+  
+          <!-- Item normal -->
+          @if (item.id !== 'exporter') {
+            <button class="sidebar-item"
+                    [class.active]="activeMenu === item.id"
+                    (click)="onMenuClick(item.id)">
+              <img [src]="'assets/icons/' + item.icon + '.png'" class="sidebar-icon" [alt]="item.label">
+              <span class="sidebar-label">{{ item.label }}</span>
+            </button>
+          }
+  
+          <!-- Export : item parent + sous-items -->
+          @if (item.id === 'exporter') {
+            <button class="sidebar-item"
+                    [class.active]="activeMenu === 'exporter'"
+                    (click)="onMenuClick('exporter')">
+              <img src="assets/icons/export-file.png" class="sidebar-icon" alt="Exporter">
+              <span class="sidebar-label">Exporter</span>
+            </button>
+            @if (activeMenu === 'exporter') {
+              @if (can('EXPORT_PDF')) {
+                <button class="sidebar-sub-item"
+                        [class.active]="exportMode === 'pdf-selected'"
+                        (click)="exportMode = 'pdf-selected'; isSelectionMode = true">
+                  PDF (choix multiple)
+                </button>
+                <button class="sidebar-sub-item"
+                        [class.active]="exportMode === 'pdf-all'"
+                        (click)="exportMode = 'pdf-all'; isSelectionMode = false; exportPdfAll()">
+                  PDF (toutes les fiches)
+                </button>
+              }
+              @if (can('EXPORT_EXCEL')) {      
+                <button class="sidebar-sub-item"
+                        [class.active]="exportMode === 'excel'"
+                        (click)="exportMode = 'excel'; isSelectionMode = false; exportExcel()">
+                  Excel
+                </button>
+              }
+            }
+          }
+        }
+      </div>
+      @if (menuItemsBottom) {
+        <div class="sidebar-bottom">
+          <button class="sidebar-item"
+                  [class.active]="activeMenu === 'selectionner'"
+                  (click)="onMenuClick('selectionner')">
+            <img src="assets/icons/check.png" class="sidebar-icon" alt="Sélectionner">
+            <span class="sidebar-label">{{ menuItemsBottom.label }}</span>
+          </button>
+        </div>
+      }
+    </nav>
+    <div class="right-zone">
+      <!-- ===== TOPBAR ===== -->
+      <header class="topbar">
+
+    <!-- Logo BHS centré -->
+    <div class="logo-area">
+      <!-- Actions contextuelles (icônes rondes vertes) en mode sélection -->
+      @if (isSelectionMode && selectedCount > 0) {
+        <div class="topbar-actions">
+          @if (activeMenu === 'modifier' && can('EDIT_FICHE')) {
+            <button class="topbar-action-circle" title="Modifier" (click)="onMenuClick('modifier')">
+              <img src="assets/icons/modify white.png" class="topbar-action-icon" alt="Modifier">
+            </button>
+          }
+          @if (activeMenu === 'archiver' && can('ARCHIVE_FICHE')) {
+            <button class="topbar-action-circle" title="Archiver" (click)="demanderConfirmation('archiver-selection')">
+              <img src="assets/icons/file-storage white.png" class="topbar-action-icon" alt="Archiver">
+            </button>
+          }
+          @if (activeMenu === 'valider' && can('VALIDATE_FICHE')) {
+            <button class="topbar-action-circle" title="Valider" (click)="demanderConfirmation('valider')">
+              <img src="assets/icons/validation white.png" class="topbar-action-icon" alt="Valider">
+            </button>
+          }
+          @if (activeMenu === 'approuver' && can('APPROVE_FICHE')) {
+            <button class="topbar-action-circle" title="Approuver" (click)="demanderConfirmation('approuver')">
+              <img src="assets/icons/approve white.png" class="topbar-action-icon" alt="Approuver">
+            </button>
+          }
+          @if (activeMenu === 'exporter' && exportMode === 'pdf-selected' && can('EXPORT_PDF')) {
+            <button class="topbar-action-circle" title="Exporter PDF sélection" (click)="exportPdfSelected()">
+              <img src="assets/icons/export-file white.png" class="topbar-action-icon" alt="Export PDF">
+            </button>
+          }
+          <button class="topbar-action-circle red-action" title="Annuler la sélection" (click)="isSelectionMode = false; selectedFiches = newSet()">
+            <img src="assets/icons/cross.png" class="topbar-action-icon" alt="Annuler">
+          </button>
+        </div>
+      } @else {
+        <button class="logo-btn" (click)="onMenuClick('home')">
+          <img src="assets/images/bhs-logo.png" alt="BHS" class="topbar-logo">
+        </button>
+      }
+    </div>
+
+    <!-- Droite -->
+    <div class="topbar-right">
+
+      <!-- Se déconnecter -->
+      <button class="btn-deconnect" (click)="logout()">Se déconnecter</button>
+
+      <!-- Séparateur -->
+      <div class="topbar-separator"></div>
+
+      <!-- Aide (?) -->
+      <button class="btn-aide" title="Aide" (click)="helpVisible = true; $event.stopPropagation()">
+        <img src="assets/icons/question.png" class="aide-icon" alt="Aide">
+      </button>
+
+      <!-- Toggle thème — Light.png / Night.png avec animation flip -->
+      <button class="theme-btn" [class.is-dark]="isDark"
+              (click)="toggleTheme(); $event.stopPropagation()" title="Changer de thème">
+        <img src="assets/icons/Light.png" class="theme-img theme-img-dark" alt="Mode clair">
+        <img src="assets/icons/Night.png" class="theme-img theme-img-light"  alt="Mode sombre">
+      </button>
+
+      <!-- Séparateur -->
+      <div class="topbar-separator"></div>
+
+      <!-- Zone utilisateur + dropdown rôles -->
+      <div class="user-zone"
+           (click)="hasMultipleRoles && (showRoleDropdown = !showRoleDropdown); $event.stopPropagation()">
+        <img src="assets/icons/avatar.png" class="avatar-icon" alt="Avatar">
+        <div class="user-info">
+          <span class="user-name">{{ currentUser.username }}</span>
+          <span class="user-role-label">{{ getRoleLabel(activeRole) }}</span>
+        </div>
+
+        @if (showRoleDropdown && hasMultipleRoles) {
+          <div class="role-dropdown" (click)="$event.stopPropagation()">
+            @for (role of allRoles; track role) {
+              <div class="role-option" [class.active]="role === activeRole"
+                   (click)="switchRole(castRole(role)); showRoleDropdown = false">
+                <img src="assets/icons/avatar.png" class="role-avatar" alt="">
+                <div>
+                  <div class="role-option-name">{{ currentUser.username }}</div>
+                  <div class="role-option-sub">{{ getRoleLabel(castRole(role)) }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+      </header>
+      <!-- ===== CONTENU ===== -->
+      <main class="content" [class.selection-active]="isSelectionMode">
+          <!-- Spinner fiches -->
+          @if (isLoadingFiches && showGrid) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p class="loading-text">Chargement…</p>
+            </div>
+          }
+
+          <!-- Erreur backend fiches -->
+          @if (!isLoadingFiches && erreurChargement) {
+            <div class="error-state">
+              <img src="assets/icons/cross.png" class="empty-icon" alt="">
+              <h3 class="empty-title">Connexion impossible</h3>
+              <p class="empty-msg">{{ erreurChargement }}</p>
+              <button class="btn btn-green" (click)="loadFiches()">Réessayer</button>
+            </div>
+          }
+
+            <!-- ══════════════════════════════════════════════
+                GRILLE DES FICHES — masquée pendant le chargement
+                ══════════════════════════════════════════════ -->
+            @if (showGrid && !isLoadingFiches) {
+
+              <!-- Bandeau sélection -->
+              @if (isSelectionMode) {
+                <div class="info-banner">
+                  <img src="assets/icons/check_1_.png" class="info-icon" alt="">
+                  @if (activeMenu === 'archiver') { Sélectionnez les fiches à archiver -&nbsp; }
+                  @else if (activeMenu === 'valider') { Sélectionnez les fiches à valider -&nbsp; }
+                  @else if (activeMenu === 'approuver') { Sélectionnez les fiches à approuver -&nbsp; }
+                  @else if (activeMenu === 'exporter') { Sélectionnez les fiches à exporter -&nbsp; }
+                  @else { Cliquer sur une fiche pour la sélectionner -&nbsp; }
+                  <strong>{{ selectedCount }} sélectionnée(s)</strong>
+                </div>
+              }
+              @if (activeMenu === 'modifier' && !ficheToEdit) {
+                <div class="info-banner">
+                  <img src="assets/icons/modify.png" class="info-icon" alt="">
+                  Cliquez sur une fiche pour la modifier
+                </div>
+              }
+              <!-- ══════════════════════════════════════════════
+                RECHERCHER
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === 'rechercher') {
+              <div class="search-page">
+                <div class="search-page-title">Recherche par :</div>
+                <div [formGroup]="searchForm" class="search-grid">
+
+                  <div class="search-field-maquette">
+                    <label>Intitulé de Poste</label>
+                    <select formControlName="intitulePoste" class="search-select-maquette">
+                      <option value="">(Intitulé de Poste)</option>
+                      @for (i of intitulesUniques; track i) { <option [value]="i">{{ i }}</option> }
+                    </select>
+                  </div>
+
+                  <div class="search-field-maquette">
+                    <label>Direction</label>
+                    <select formControlName="direction" class="search-select-maquette">
+                      <option value="">(Direction)</option>
+                      @for (d of directionsUniques; track d) { <option [value]="d">{{ d }}</option> }
+                    </select>
+                  </div>
+
+                  <div class="search-field-maquette">
+                    <label>Département</label>
+                    <select formControlName="departement" class="search-select-maquette">
+                      <option value="">(Département)</option>
+                      @for (d of deptUniques; track d) { <option [value]="d">{{ d }}</option> }
+                    </select>
+                  </div>
+
+                  <div class="search-field-maquette">
+                    <label>Techniques</label>
+                    <select formControlName="competencesTechniques" class="search-select-maquette">
+                      <option value="">(Techniques)</option>
+                      @for (t of techniquesUniques; track t) { <option [value]="t">{{ t }}</option> }
+                    </select>
+                  </div>
+
+                  <div class="search-field-maquette">
+                    <label>Comportementales</label>
+                    <select formControlName="competencesComportementales" class="search-select-maquette">
+                      <option value="">(Comportementales)</option>
+                      @for (c of comportementalesUniques; track c) { <option [value]="c">{{ c }}</option> }
+                    </select>
+                  </div>
+
+                  <div class="search-field-maquette">
+                    <label>Statut</label>
+                    <select formControlName="statut" class="search-select-maquette">
+                      <option value="">(Statut)</option>
+                      @for (s of statutOptions; track s) { <option [value]="s">{{ s }}</option> }
+                    </select>
+                  </div>
+
+                </div>
+                <div class="form-submit-bottom">
+                  <button class="btn btn-outline" (click)="reinitRecherche()">Réinitialiser</button>
+                  <button class="btn btn-green" (click)="onSearch()">
+                    <img src="assets/icons/search white.png" class="btn-icon" alt=""> Rechercher
+                  </button>
+                </div>
+              </div>
+            }
+              
+              <!-- État vide -->
+              @if (fichesFiltrees.length === 0) {
+                <div class="empty-state">
+                  <img src="assets/icons/file-storage.png" class="empty-icon" alt="">
+                  <h3 class="empty-title">Aucune fiche trouvée</h3>
+                  <p class="empty-msg">
+                    @if (activeMenu === 'valider')   { Il n'y a aucune fiche à valider. }
+                    @else if (activeMenu === 'approuver') { Il n'y a aucune fiche à approuver. }
+                    @else if (activeMenu === 'archiver') { Il n'y a aucune fiche à approuver. }
+                    @else { Aucune fiche disponible. }
+                  </p>
+                </div>
+              }
+
+              <!-- Grille -->
+              @if (fichesDuPage.length > 0) {
+                <div class="fiches-grid">
+                  @for (fiche of fichesDuPage; track fiche.fiche_id) {
+                    <div class="fiche-card"
+                        [class.selected]="isSelected(fiche.fiche_id) && activeMenu !== 'supprimer'"
+                        [class.selected-delete]="isSelected(fiche.fiche_id) && activeMenu === 'supprimer'"
+                        [class.version-clickable]="activeMenu === 'version'"
+                        (click)="activeMenu === 'version'  ? onSelectFicheVersion(fiche)
+                                : activeMenu === 'modifier' ? onSelectForEdit(fiche)
+                                : isSelectionMode           ? toggleSelect(fiche.fiche_id)
+                                : openDetail(fiche)">
+
+                      @if (isSelected(fiche.fiche_id)) {
+                        <div class="selection-check">
+                          <img [src]="activeMenu === 'supprimer' ? 'assets/icons/cross.png' : 'assets/icons/check_1_.png'" alt="">
+                        </div>
+                      }
+
+                      <p><strong>Fiche numéro :  </strong> <span class="text-value">{{ fiche.fiche_id }}</span></p>
+                      <p><strong>Intitulé du Poste :  </strong> <span class="text-value">{{ fiche.intitule_poste }}</span></p>
+                      <p><strong>Direction :  </strong> <span class="text-value">{{ fiche.direction }}</span></p>
+                      <p><strong>Département :  </strong> <span class="text-value">{{ fiche.departement }}</span></p>
+                      <p><strong>Service :  </strong> <span class="text-value">{{ fiche.service }}</span></p>
+                      <p><strong>Status de la fiche :  </strong> <span class="statut-badge" [ngClass]="getStatutClass(fiche.statut)">{{ fiche.statut }}</span></p>
+                      <p><strong>Version :  </strong> {{ fiche.version }}</p>
+                      <p><strong>Date de création :  </strong> {{ formatDate(fiche.created_at) }}</p>
+                      <p><strong>Date de mise à jour :  </strong> {{ formatDate(fiche.updated_at) }}</p>
+                    </div>
+                  }
+                </div>
+
+                <!-- Pagination -->
+                @if (totalPages > 1) {
+                  <div class="pagination">
+                    <button class="page-btn" [class.disabled]="pageCourante === 1"
+                            (click)="allerPage(pageCourante - 1)">
+                      <img src="assets/icons/arrowleft.png" class="page-arrow page-arrow-right" alt="◀">
+                    </button>
+                    @for (p of pages; track p) {
+                      <button class="page-btn" [class.page-active]="p === pageCourante"
+                              (click)="allerPage(p)">{{ p }}</button>
+                    }
+                    <button class="page-btn" [class.disabled]="pageCourante === totalPages"
+                            (click)="allerPage(pageCourante + 1)">
+                      <img src="assets/icons/arrowleft.png" class="page-arrow" alt="▶">
+                    </button>
+                    <span class="page-info">{{ pageCourante }} / {{ totalPages }}</span>
+                  </div>
+                }
+              }
+              <!-- Boutons d'action après sélection (archiver/valider/approuver) -->
+              @if (isSelectionMode && selectedCount > 0) {
+                @if (activeMenu === 'archiver') {
+                  <div class="form-submit-bottom">
+                    <button class="btn btn-green" (click)="demanderConfirmation('archiver-selection')">
+                      <img src="assets/icons/file-storage white.png" class="btn-icon" alt="">
+                      Archiver ({{ selectedCount }})
+                    </button>
+                  </div>
+                }
+                @if (activeMenu === 'valider') {
+                  <div class="form-submit-bottom">
+                    <button class="btn btn-green" (click)="demanderConfirmation('valider')">
+                      <img src="assets/icons/validation white.png" class="btn-icon" alt="">
+                      Valider ({{ selectedCount }})
+                    </button>
+                  </div>
+                }
+                @if (activeMenu === 'approuver') {
+                  <div class="form-submit-bottom">
+                    <button class="btn btn-green" (click)="demanderConfirmation('approuver')">
+                      <img src="assets/icons/approve white.png" class="btn-icon" alt="">
+                      Approuver ({{ selectedCount }})
+                    </button>
+                  </div>
+                }
+              }
+              <!-- Tableau versions -->
+              @if (activeMenu === 'version' && selectedFicheVersion) {
+                <div style="margin-top:24px">
+                  <p style="font-weight: 800; margin-bottom: 12px; color: var(--text-primary);">
+                    Historique — {{ selectedFicheVersion.intitule_poste }}
+                  </p>
+                  <div class="audit-entries">
+                    @for (log of versionLogs; track log.audit_id) {
+                      <div class="audit-entry">
+                        <div class="audit-entry-header">
+                          <span>Utilisateur</span>
+                          <span>Action</span>
+                          <span>Date</span>
+                          <span>Fiche N°</span>
+                          <span>Version</span>
+                        </div>
+                        <div class="audit-entry-row">
+                          <div class="audit-user-cell">
+                            <img src="assets/icons/avatar.png" class="audit-avatar" alt="">
+                            <div>
+                              <div class="audit-user-name">{{ log.userNom ?? '—' }}</div>
+                              <div class="audit-user-role">{{ log.userRole ?? '—' }}</div>
+                            </div>
+                          </div>
+                          <span>{{ ACTION_LABELS[log.action] ?? log.action }}</span>
+                          <span>{{ formatDate(log.date_action) }}</span>
+                          <span>{{ log.ficheId ?? '—' }}</span>
+                          <span>{{ log.ficheVersion ?? '—' }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- ══════════════════════════════════════════════
+                ACCUEIL ADMIN
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === '' && activeRole === 'ADMIN') {
+              @if (isLoadingUsers) {
+                <div class="loading-state"><div class="spinner"></div><p class="loading-text">Chargement des utilisateurs…</p></div>
+              } @else if (utilisateurs.length === 0) {
+                <div class="empty-state">
+                  <img src="assets/icons/avatar.png" class="empty-icon" alt="">
+                  <h3 class="empty-title">Aucun utilisateur</h3>
+                  <p class="empty-msg">Aucun utilisateur n'a été trouvé.</p>
+                </div>
+              } @else {
+                <div class="users-page-title">Utilisateurs</div>
+                <div class="users-grid">
+                  @for (user of utilisateurs; track user.id) {
+                    <div class="user-card">
+                      <img src="assets/icons/avatar.png" class="user-card-avatar" alt="">
+                      <div>
+                        <div class="user-card-name">{{ user.username }}</div>
+                        <div class="user-card-role">{{ user.email }}</div>
+                        <div class="user-roles-tooltip">
+                          @for (r of user.roles; track r) {
+                            <span class="role-badge">{{ getRoleLabel(castRole(r)) }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            }
+
+            <!-- ══════════════════════════════════════════════
+                ACCUEIL AUDIT
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === '' && activeRole === 'AUDIT') {
+              @if (isLoadingAudit) {
+                <div class="loading-state"><div class="spinner"></div><p class="loading-text">Chargement de l'historique…</p></div>
+              } @else if (auditLogs.length === 0) {
+                <div class="empty-state">
+                  <img src="assets/icons/historical.png" class="empty-icon" alt="">
+                  <h3 class="empty-title">Aucun historique</h3>
+                  <p class="empty-msg">Aucune action n'a encore été enregistrée.</p>
+                </div>
+              } @else {
+                <div class="audit-entries">
+                  @for (log of auditLogsFiltres; track log.audit_id) {
+                    <div class="audit-entry">
+                      <div class="audit-entry-header">
+                        <span>Utilisateur</span><span>Action</span><span>Date</span><span>Fiche N°</span><span>Version</span>
+                      </div>
+                      <div class="audit-entry-row">
+                        <div class="audit-user-cell">
+                          <img src="assets/icons/avatar.png" class="audit-avatar" alt="">
+                          <div>
+                            <div class="audit-user-name">{{ log.userNom ?? '—' }}</div>
+                            <div class="audit-user-role">{{ log.userRole ?? '—' }}</div>
+                          </div>
+                        </div>
+                        <span>{{ ACTION_LABELS[log.action] ?? log.action }}</span>
+                        <span>{{ formatDate(log.date_action) }}</span>
+                        <span>{{ log.ficheId ?? '—' }}</span>
+                        <span>{{ log.ficheVersion ?? '—' }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            }
+
+            <!-- ══════════════════════════════════════════════
+                CRÉER UNE FICHE
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === 'creer' || (activeMenu === 'modifier' && ficheToEdit)) {
+              <div class="form-page">
+                <div class="form-fields-list">
+
+                  <div class="form-field-maquette" [class.field-error]="champInvalide(ficheForm, 'intitule_poste')">
+                    <label>Intitulé de Poste <span class="required">*</span></label>
+                    <input [formControl]="$any(ficheForm.get('intitule_poste'))"
+                          placeholder="(Intitulé de Poste)" class="form-input-maquette">
+                    @if (champInvalide(ficheForm, 'intitule_poste')) {
+                      <span class="field-error-msg">{{ erreurChamp(ficheForm, 'intitule_poste') }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field-maquette" [class.field-error]="champInvalide(ficheForm, 'direction')">
+                    <label>Direction <span class="required">*</span></label>
+                    <input [formControl]="$any(ficheForm.get('direction'))"
+                          placeholder="(Direction)" class="form-input-maquette">
+                    @if (champInvalide(ficheForm, 'direction')) {
+                      <span class="field-error-msg">{{ erreurChamp(ficheForm, 'direction') }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field-maquette" [class.field-error]="champInvalide(ficheForm, 'departement')">
+                    <label>Département <span class="required">*</span></label>
+                    <input [formControl]="$any(ficheForm.get('departement'))"
+                          placeholder="(Département)" class="form-input-maquette">
+                    @if (champInvalide(ficheForm, 'departement')) {
+                      <span class="field-error-msg">{{ erreurChamp(ficheForm, 'departement') }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Service</label>
+                    <input [formControl]="$any(ficheForm.get('service'))"
+                          placeholder="(Service)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Rattachement hiérarchique</label>
+                    <input [formControl]="$any(ficheForm.get('rattachement_hierarchique'))"
+                          placeholder="(Rattachement hiérarchique)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette" [class.field-error]="champInvalide(ficheForm, 'mission_principale')">
+                    <label>Mission Principale <span class="required">*</span></label>
+                    <input [formControl]="$any(ficheForm.get('mission_principale'))"
+                          placeholder="(Mission)" class="form-input-maquette">
+                    @if (champInvalide(ficheForm, 'mission_principale')) {
+                      <span class="field-error-msg">{{ erreurChamp(ficheForm, 'mission_principale') }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Activités détaillées</label>
+                    <input [formControl]="$any(ficheForm.get('activites_detaillees'))"
+                          placeholder="(Activités)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Responsabilités</label>
+                    <input [formControl]="$any(ficheForm.get('responsabilites'))"
+                          placeholder="(Responsabilités)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Compétences Techniques</label>
+                    <input [formControl]="$any(ficheForm.get('competences_techniques'))"
+                          placeholder="(Techniques)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Compétences Comportementales</label>
+                    <input [formControl]="$any(ficheForm.get('competences_comportementales'))"
+                          placeholder="(Comportementales)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Niveau d'études requis</label>
+                    <input [formControl]="$any(ficheForm.get('niveau_etudes'))"
+                          placeholder="(Niveau)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Expérience minimale requise</label>
+                    <input [formControl]="$any(ficheForm.get('experience_minimale'))"
+                          placeholder="(Expérience)" class="form-input-maquette">
+                  </div>
+                  
+                  <div class="form-field-maquette">
+                    <label>Certifications nécessaires</label>
+                    <input [formControl]="$any(ficheForm.get('certifications'))"
+                          placeholder="(Certifications nécessaires)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Indicateurs de performance (KPI)</label>
+                    <input [formControl]="$any(ficheForm.get('kpis'))"
+                          placeholder="(Indicateurs)" class="form-input-maquette">
+                  </div>
+
+                  <div class="form-field-maquette">
+                    <label>Risques liés au poste</label>
+                    <input [formControl]="$any(ficheForm.get('risques'))"
+                          placeholder="(Risques)" class="form-input-maquette">
+                  </div>
+
+                </div>
+
+                <div class="form-submit-bottom">
+                  <button class="btn btn-green" (click)="onSubmitFiche()">
+                    <img [src]="activeMenu === 'creer' ? 'assets/icons/pencil white.png' : 'assets/icons/modify white.png'"
+                        class="btn-icon" alt="">
+                    {{ activeMenu === 'creer' ? 'Créer la fiche' : 'Modifier la fiche' }}
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Sélection fiche à modifier -->
+            @if (activeMenu === 'modifier' && !ficheToEdit) {
+              <div class="info-banner">
+                <img src="assets/icons/modify.png" class="info-icon" alt=""> Cliquez sur une fiche pour la modifier
+              </div>
+              <div class="fiches-grid">
+                @for (fiche of fichesDuPage; track fiche.fiche_id) {
+                  <div class="fiche-card" (click)="onSelectForEdit(fiche)">
+                    <p><strong>Fiche numéro :</strong> <span class="text-value">{{ fiche.fiche_id }}</span></p>
+                    <p><strong>Intitulé du Poste :</strong> <span class="text-value">{{ fiche.intitule_poste }}</span></p>
+                    <p><strong>Direction :</strong> <span class="text-value">{{ fiche.direction }}</span></p>
+                    <p><strong>Département :</strong> <span class="text-value">{{ fiche.departement }}</span></p>
+                    <p><strong>Service :</strong> <span class="text-value">{{ fiche.service }}</span></p>
+                    <p><strong>Status de la fiche :</strong> <span class="text-value">{{ fiche.statut }}</span></p>
+                    <p><strong>Version :</strong> {{ fiche.version }}</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- ══════════════════════════════════════════════
+                HISTORIQUE — style maquette (entrée par entrée)
+                ══════════════════════════════════════════════ -->
+                @if (activeMenu === 'historique' || (activeMenu === 'version' && !selectedFicheVersion)) {
+                  <!-- Barre de recherche audit -->
+                  <div class="audit-search-bar" [formGroup]="auditSearchForm">
+                    <div class="audit-search-field">
+                      <label>Filtrer par fiche</label>
+                      <select class="search-select-maquette" [(ngModel)]="filtreHistoriqueFicheId" [ngModelOptions]="{standalone: true}">
+                        <option [value]="null">(Toutes les fiches)</option>
+                        @for (id of ficheIdsUniques; track id) { <option [value]="id">Fiche N° {{ id }}</option> }
+                      </select>
+                    </div>
+                    <div class="audit-search-field">
+                      <label>Filtrer par action</label>
+                      <select formControlName="action" class="search-select-maquette">
+                        <option value="">(Toutes les actions)</option>
+                        @for (a of auditActions; track a) { <option [value]="a">{{ ACTION_LABELS[a] ?? a }}</option> }
+                      </select>
+                    </div>
+                    <div class="audit-search-field">
+                      <label>Date début</label>
+                      <input type="datetime-local" formControlName="startDate" class="search-input-maquette">
+                    </div>
+                    <div class="audit-search-field">
+                      <label>Date fin</label>
+                      <input type="datetime-local" formControlName="endDate" class="search-input-maquette">
+                    </div>
+                    <button class="btn btn-green" (click)="onSearchAudit()" style="align-self:flex-end">
+                      Rechercher
+                    </button>
+                    <button class="btn btn-outline" (click)="reinitAudit()" style="align-self:flex-end">
+                      Tout afficher
+                    </button>
+                  </div>
+              @if (auditLogs.length === 0) {
+                <div class="empty-state">
+                  <img src="assets/icons/historical.png" class="empty-icon" alt="">
+                  <h3 class="empty-title">Aucun historique</h3>
+                  <p class="empty-msg">Aucune action n'a encore été enregistrée.</p>
+                </div>
+              } @else {
+                <div class="audit-entries">
+                  @for (log of auditLogsFiltres; track log.audit_id) {
+                    <div class="audit-entry">
+                      <div class="audit-entry-header">
+                        <span>Utilisateur</span>
+                        <span>Action</span>
+                        <span>Date</span>
+                        <span>Fiche N°</span>
+                        <span>Version</span>
+                      </div>
+                      <div class="audit-entry-row">
+                        <div class="audit-user-cell">
+                          <img src="assets/icons/avatar.png" class="audit-avatar" alt="">
+                          <div>
+                            <div class="audit-user-name">{{ log.userNom ?? '—' }}</div>
+                            <div class="audit-user-role">{{ log.userRole ?? '—' }}</div>
+                          </div>
+                        </div>
+                        <span>{{ ACTION_LABELS[log.action] ?? log.action }}</span>
+                        <span>{{ formatDate(log.date_action) }}</span>
+                        <span>{{ log.ficheId ?? '—' }}</span>
+                        <span>{{ log.ficheVersion ?? '—' }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            }
+
+            <!-- ══════════════════════════════════════════════
+                ADMIN — Créer utilisateur
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === 'creer-user') {
+              <div class="form-page">
+                <div class="form-fields-list">
+
+                  <div class="form-field-maquette" [class.field-error]="champInvalide(userForm, 'prenom')">
+                    <label>Nom de l'utilisateur <span class="required">*</span></label>
+                    <input [formControl]="$any(userForm.get('username'))"
+                          placeholder="(Nom d'utilisateur)" class="form-input-maquette">
+                    @if (champInvalide(userForm, 'username')) {
+                      <span class="field-error-msg">{{ erreurChamp(userForm, 'username') }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field-maquette" [class.field-error]="champInvalide(userForm, 'email')">
+                    <label>Email <span class="required">*</span></label>
+                    <input [formControl]="$any(userForm.get('email'))"
+                          placeholder="(Email)" type="email" class="form-input-maquette">
+                    @if (champInvalide(userForm, 'email')) {
+                      <span class="field-error-msg">{{ erreurChamp(userForm, 'email') }}</span>
+                    }
+                  </div>
+
+                  <div class="form-field-maquette" [class.field-error]="champInvalide(userForm, 'password')">
+                    <label>Mot de passe <span class="required">*</span></label>
+                    <input [formControl]="$any(userForm.get('password'))"
+                          placeholder="(Mot de passe)" type="password" class="form-input-maquette">
+                    @if (champInvalide(userForm, 'password')) {
+                      <span class="field-error-msg">{{ erreurChamp(userForm, 'password') }}</span>
+                    }
+                  </div>
+
+                </div>
+                <div class="form-submit-bottom">
+                  <button class="btn btn-green" (click)="onCreerUser()">
+                    <img src="assets/icons/add-user white.png" class="btn-icon" alt=""> Créer l'utilisateur
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- ══════════════════════════════════════════════
+                ADMIN — Supprimer utilisateur
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === 'supprimer') {
+              <div class="users-page-title">Sélectionner un utilisateur à supprimer</div>
+              @if (utilisateurs.length === 0) {
+                <div class="empty-state">
+                  <img src="assets/icons/avatar.png" class="empty-icon" alt="">
+                  <h3 class="empty-title">Aucun utilisateur</h3>
+                  <p class="empty-msg">Aucun utilisateur n'a été trouvé.</p>
+                </div>
+              } @else {
+                <div class="users-grid">
+                  @for (user of utilisateurs; track user.id) {
+                    <div class="user-card"
+                        [class.selected-red]="selectedUserId === user.id"
+                        (click)="selectedUserId = user.id">
+                      @if (selectedUserId === user.id) {
+                        <div class="user-card-check red">
+                          <img src="assets/icons/cross.png" alt="">
+                        </div>
+                      }
+                      <img src="assets/icons/avatar.png" class="user-card-avatar" alt="">
+                      <div>
+                        <div class="user-card-name">{{ user.username }}</div>
+                        <div class="user-card-role">{{ user.email }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
+                @if (selectedUserId) {
+                  <div class="form-submit-bottom">
+                    <button class="btn btn-red" (click)="demanderConfirmation('supprimer-user')">
+                      <img src="assets/icons/cross.png" class="btn-icon" alt=""> Supprimer
+                    </button>
+                  </div>
+                }
+              }
+            }
+
+            <!-- ══════════════════════════════════════════════
+                ADMIN — Assigner rôle : Étape 1 — choisir utilisateur
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === 'assigner' && assignStep === 1) {
+              <div class="users-page-title">Étape 1 — Sélectionner un utilisateur</div>
+              @if (utilisateurs.length === 0) {
+                <div class="empty-state">
+                  <img src="assets/icons/avatar.png" class="empty-icon" alt="">
+                  <h3 class="empty-title">Aucun utilisateur</h3>
+                  <p class="empty-msg">Aucun utilisateur n'a été trouvé.</p>
+                </div>
+              } @else {
+                <div class="users-grid">
+                  @for (user of utilisateurs; track user.id) {
+                    <div class="user-card"
+                        [class.selected-green]="selectedUserId === user.id"
+                        (click)="selectedUserId = user.id">
+                      @if (selectedUserId === user.id) {
+                        <div class="user-card-check green">
+                          <img src="assets/icons/check_1_.png" alt="">
+                        </div>
+                      }
+                      <img src="assets/icons/avatar.png" class="user-card-avatar" alt="">
+                      <div>
+                        <div class="user-card-name">{{ user.username }}</div>
+                        <div class="user-card-role">{{ user.email }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
+                @if (selectedUserId) {
+                  <div class="form-submit-bottom">
+                    <button class="btn btn-green" (click)="assignStep = 2">
+                      <img src="assets/icons/arrowleft.png" class="btn-icon page-arrow-right" alt=""> Suivant
+                    </button>
+                  </div>
+                }
+              }
+            }
+
+            <!-- ══════════════════════════════════════════════
+                ADMIN — Assigner rôle : Étape 2 — choisir rôle
+                ══════════════════════════════════════════════ -->
+            @if (activeMenu === 'assigner' && assignStep === 2) {
+              <div class="users-page-title">Étape 2 — Sélectionner un rôle</div>
+              <div class="roles-grid">
+                @for (role of rolesDisponibles; track role) {
+                  <div class="role-card"
+                      [class.selected-green]="selectedNewRole === role"
+                      (click)="selectedNewRole = role">
+                    @if (selectedNewRole === role) {
+                      <div class="user-card-check green">
+                        <img src="assets/icons/check_1_.png" alt="">
+                      </div>
+                    }
+                    <img src="assets/icons/group.png" class="role-card-avatar" alt="">
+                    <span>{{ getRoleLabel(castRole(role)) }}</span>
+                  </div>
+                }
+              </div>
+              <div class="form-submit-bottom">
+                <button class="btn btn-outline" (click)="assignStep = 1; selectedNewRole = null">
+                  <img src="assets/icons/arrowleft.png" class="btn-icon page-arrow-right" alt=""> Précédent
+                </button>
+                @if (selectedNewRole) {
+                  <button class="btn btn-green" (click)="demanderConfirmation('assigner-role')">
+                    <img src="assets/icons/assigner white.png" class="btn-icon" alt=""> Assigner
+                  </button>
+                }
+              </div>
+            }
+           <!-- fin sections admin -->
+
+      </main>
+    </div>
+
+  <!-- ===== MODALE DÉTAIL FICHE ===== -->
+  @if (ficheDetail) {
+    <div class="modal-overlay" (click)="closeDetail()">
+      <div class="modal-detail" (click)="$event.stopPropagation()">
+        <button class="modal-close-btn" (click)="closeDetail()">✕</button>
+
+        <div class="detail-line"><strong>Fiche numéro :  </strong> <span class="detail-val">{{ ficheDetail.fiche_id }}</span></div>
+        <div class="detail-line"><strong>Intitulé du Poste :  </strong> <span class="detail-val">{{ ficheDetail.intitule_poste }}</span></div>
+        <div class="detail-line"><strong>Direction :  </strong> <span class="detail-val">{{ ficheDetail.direction }}</span></div>
+        <div class="detail-line"><strong>Département :  </strong> <span class="detail-val">{{ ficheDetail.departement }}</span></div>
+        <div class="detail-line"><strong>Service :  </strong> <span class="detail-val">{{ ficheDetail.service }}</span></div>
+        <div class="detail-line"><strong>Rattachement hiérarchique :  </strong> <span class="detail-val">{{ ficheDetail.rattachement_hierarchique }}</span></div>
+        <div class="detail-line"><strong>Mission Principale :  </strong> <span class="detail-val">{{ ficheDetail.mission_principale }}</span></div>
+        <div class="detail-line"><strong>Activités détaillées :  </strong> <span class="detail-val">{{ ficheDetail.activites_detaillees }}</span></div>
+        <div class="detail-line"><strong>Responsabilités :  </strong> <span class="detail-val">{{ ficheDetail.responsabilites }}</span></div>
+        <div class="detail-line"><strong>Compétences Techniques :  </strong> <span class="detail-val">{{ ficheDetail.competences_techniques }}</span></div>
+        <div class="detail-line"><strong>Compétences Comportementales :  </strong> <span class="detail-val">{{ ficheDetail.competences_comportementales }}</span></div>
+        <div class="detail-line"><strong>Niveau d'études requis :  </strong> <span class="detail-val">{{ ficheDetail.niveau_etudes }}</span></div>
+        <div class="detail-line"><strong>Expérience minimale requise :  </strong> <span class="detail-val">{{ ficheDetail.experience_minimale }}</span></div>
+        <div class="detail-line"><strong>Certifications nécessaires :  </strong> <span class="detail-val">{{ ficheDetail.certifications }}</span></div>
+        <div class="detail-line"><strong>Indicateurs de performance (KPI) :  </strong> <span class="detail-val">{{ ficheDetail.kpis }}</span></div>
+        <div class="detail-line"><strong>Risques liés au poste :  </strong> <span class="detail-val">{{ ficheDetail.risques }}</span></div>
+        <div class="detail-line"><strong>Status de la fiche :  </strong> <span class="statut-badge" [ngClass]="getStatutClass(ficheDetail.statut)">{{ ficheDetail.statut }}</span></div>
+        <div class="detail-line"><strong>Version :  </strong> {{ ficheDetail.version }}</div>
+        <div class="detail-line"><strong>Date de création :  </strong> {{ formatDate(ficheDetail.created_at) }}
+</div>
+        <div class="detail-line"><strong>Date de mise à jour :  </strong> {{ formatDate(ficheDetail.updated_at) }}</div>
+        
+      </div>
+
+      <!-- Boutons action flottants (ronds verts à droite) -->
+      <div class="modal-detail-actions" (click)="$event.stopPropagation()">
+        @if (can('EDIT_FICHE')) {
+          <button class="modal-action-btn" (click)="onModifierFromDetail()">
+            <img src="assets/icons/modify white.png" class="modal-action-icon" alt="">
+            <span class="action-tooltip">Modifier</span>
+          </button>
+        }
+        @if (can('APPROVE_FICHE')) {
+          <button class="modal-action-btn"
+                  (click)="demanderConfirmation('approuver-fiche', ficheDetail)">
+            <img src="assets/icons/approve white.png" class="modal-action-icon" alt="">
+            <span class="action-tooltip">Valider</span>
+          </button>
+        }
+        @if (can('VALIDATE_FICHE')) {
+          <button class="modal-action-btn"
+                  (click)="demanderConfirmation('valider-fiche', ficheDetail)">
+            <img src="assets/icons/validation white.png" class="modal-action-icon" alt="">
+            <span class="action-tooltip">Valider</span>
+          </button>
+        }
+        @if (can('ARCHIVE_FICHE')) {
+          <button class="modal-action-btn"
+                  (click)="demanderConfirmation('archiver-fiche', ficheDetail)">
+            <img src="assets/icons/file-storage white.png" class="modal-action-icon" alt="">
+            <span class="action-tooltip">Archiver</span>
+          </button>
+        }
+        @if (can('EXPORT_PDF')) {
+          <button class="modal-action-btn"
+                  (click)="selectedFiches.add(ficheDetail!.fiche_id); exportPdfSelected(); closeDetail()">
+            <img src="assets/icons/export-file white.png" class="modal-action-icon" alt="">
+            <span class="action-tooltip">Exporter</span>
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODALE AIDE ===== -->
+  @if (helpVisible) {
+    <div class="modal-overlay" (click)="helpVisible = false">
+      <div class="modal-aide" (click)="$event.stopPropagation()">
+        <div class="aide-modal-header">
+          <img src="assets/icons/question.png" class="aide-modal-icon" alt="">
+          <div class="aide-modal-title">Aide - BHS Gestion des fiches</div>
+        </div>
+        <div class="aide-modal-body">
+          <p>1. Naviguez via le menu de gauche.</p>
+          <p>2. Cliquez sur une fiche pour voir son détail.</p>
+          <p>3. Utilisez "Sélectionnez" (en bas) pour des actions groupées.</p>
+          <p>4. Pour modifier, cliquez sur "Modifier une fiche" puis choisissez une fiche.</p>
+          <br>
+          <p>En cas de problème, contactez votre administrateur système.</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODALE DE CONFIRMATION ===== -->
+  @if (confirmation.visible) {
+    <div class="modal-overlay" (click)="annulerConfirmation()">
+      <div class="modal-confirm" (click)="$event.stopPropagation()">
+        <div class="confirm-icon-wrap"
+             [class.confirm-icon-danger]="confirmation.type === 'danger'"
+             [class.confirm-icon-warning]="confirmation.type === 'warning'"
+             [class.confirm-icon-success]="confirmation.type === 'success'">
+          <img [src]="confirmation.type === 'danger'  ? 'assets/icons/bin white.png'
+                    : confirmation.type === 'warning' ? 'assets/icons/file-storage white.png'
+                    : 'assets/icons/check white.png'"
+               class="confirm-icon-img" alt="">
+        </div>
+        <h3 class="confirm-title">{{ confirmation.titre }}</h3>
+        <p class="confirm-message">{{ confirmation.message }}</p>
+        @if (confirmation.details) {
+          <div class="confirm-details">{{ confirmation.details }}</div>
+        }
+        <div class="confirm-actions">
+          <button class="confirm-btn-cancel" (click)="annulerConfirmation()">Annuler</button>
+          <button class="confirm-btn-ok"
+                  [class.confirm-btn-danger]="confirmation.type === 'danger'"
+                  [class.confirm-btn-warning]="confirmation.type === 'warning'"
+                  [class.confirm-btn-success]="confirmation.type === 'success'"
+                  (click)="executerConfirmation()">
+            {{ confirmation.labelOk }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>
